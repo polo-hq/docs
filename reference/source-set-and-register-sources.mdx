@@ -1,0 +1,39 @@
+---
+title: "sourceSet and registerSources"
+description: "Build reusable source groups and merge them safely."
+---
+
+Use `polo.sourceSet(...)` to define reusable source fragments.
+
+Use `registerSources(...)` to merge them into one registry.
+
+## `polo.sourceSet(builder)`
+
+```ts
+const accountSourceSet = polo.sourceSet((sources) => {
+  const account = sources.value(schema, {
+    async resolve({ input }) {
+      return db.getAccount(input.accountId);
+    },
+  });
+
+  return { account };
+});
+```
+
+## `registerSources(...sourceSets)`
+
+```ts
+const sourceRegistry = registerSources(accountSourceSet, ticketSourceSet);
+```
+
+## Validations
+
+`registerSources` and `sourceSet` validate:
+
+- duplicate keys across source sets
+- source-handle reuse under multiple owners
+- missing dependencies
+- circular dependencies
+
+These checks fail early before runtime resolution.

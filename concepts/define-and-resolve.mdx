@@ -1,0 +1,55 @@
+---
+title: "Define and resolve"
+description: "Declare a task contract with polo.define and execute it with polo.resolve."
+---
+
+`polo.define(...)` creates a task contract.
+
+`polo.resolve(...)` executes that contract for runtime input.
+
+## Define a task
+
+```ts
+const inputSchema = z.object({
+  accountId: z.string(),
+  transcript: z.string(),
+});
+
+const task = polo.define(inputSchema, {
+  id: "support_reply",
+  sources: {
+    transcript: polo.source.fromInput("transcript"),
+    account: supportSources.account,
+    recentTickets: supportSources.recentTickets,
+  },
+  derive: ({ context }) => ({
+    mentionsBilling: /\bbilling\b/i.test(context.transcript),
+  }),
+});
+```
+
+## Resolve at runtime
+
+```ts
+const { context, prompt, trace } = await polo.resolve(task, {
+  accountId: "acc_123",
+  transcript: "Can you check our latest invoice?",
+});
+```
+
+`context` includes selected sources and derived fields.
+
+`prompt` exists only when you define a template.
+
+`trace` is always returned.
+
+## Runtime flow
+
+Polo resolves in this order:
+
+1. Validate task input
+2. Resolve sources in dependency waves
+3. Run `derive`
+4. Apply policies
+5. Fit to budget
+6. Build trace

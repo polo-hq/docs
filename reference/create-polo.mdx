@@ -1,0 +1,39 @@
+---
+title: "createPolo"
+description: "Create a Polo runtime instance with optional trace and logger hooks."
+---
+
+`createPolo(options?)` returns a runtime instance.
+
+```ts
+import { createPolo } from "@polo/core";
+
+const polo = createPolo();
+```
+
+## Signature
+
+```ts
+function createPolo(options?: {
+  logger?: { info?: (...args: unknown[]) => void };
+  onTrace?: (trace: Trace) => void;
+}): PoloInstance
+```
+
+## Options
+
+- `onTrace`: called after each successful `polo.resolve(...)`
+- `logger.info`: receives `{ trace }` payloads when provided
+
+## Example with observability hook
+
+```ts
+const polo = createPolo({
+  onTrace(trace) {
+    analytics.track("polo.resolve", {
+      taskId: trace.taskId,
+      budgetUsed: trace.budget.used,
+    });
+  },
+});
+```

@@ -1,0 +1,62 @@
+---
+title: "Policies and budget"
+description: "Control what context must be present, preferred, excluded, or dropped by budget."
+---
+
+Policies control inclusion and budget behavior.
+
+```ts
+policies: {
+  require: ["transcript", "account"],
+  prefer: ["recentTickets", "billingNotes"],
+  exclude: [
+    ({ context }) =>
+      !context.mentionsBilling
+        ? {
+            source: "billingNotes",
+            reason: "billing notes are excluded unless billing is mentioned",
+          }
+        : false,
+  ],
+  budget: 110,
+}
+```
+
+## `require`
+
+Required sources must resolve to a non-null value.
+
+If a required source resolves to `null` or `undefined`, `polo.resolve()` throws `RequiredSourceMissingError`.
+
+## `prefer`
+
+Preferred sources are higher priority than default-included sources.
+
+Under budget pressure, Polo drops default-included sources before preferred sources.
+
+## `exclude`
+
+Exclude callbacks run once per resolution after sources and derive complete.
+
+If an exclude callback targets a required source, resolution throws.
+
+## `budget`
+
+You can pass a number or a config object.
+
+```ts
+policies: {
+  budget: 400,
+}
+
+policies: {
+  budget: {
+    maxTokens: 400,
+    strategy: { type: "score_per_token" },
+  },
+}
+```
+
+Without a template, Polo estimates source token costs using TOON serialization.
+
+With a template, Polo measures the rendered prompt exactly and fits against that exact total.

@@ -1,0 +1,67 @@
+---
+title: "Source sets and dependencies"
+description: "Group reusable sources and enforce dependency-closed selection."
+---
+
+Source sets let you define reusable source fragments.
+
+`registerSources(...)` merges source sets into a single registry.
+
+## Create source sets
+
+```ts
+const accountSourceSet = polo.sourceSet((sources) => {
+  const account = sources.value(z.object({ accountId: z.string() }), {
+    async resolve({ input }) {
+      return db.getAccount(input.accountId);
+    },
+  });
+
+  const billingNotes = sources.value(
+    z.object({ accountId: z.string() }),
+    { account },
+    {
+      async resolve({ account }) {
+        return db.getBillingNotes(account.id);
+      },
+    },
+  );
+
+  return { account, billingNotes };
+});
+
+const supportSources = registerSources(accountSourceSet);
+```
+
+## Dependency validation
+
+Polo validates dependency graphs in two places:
+
+1. When sources are registered
+2. When a task is defined
+
+If a task selects a dependent source without its prerequisite, task definition throws.
+
+## Allowed task key aliases
+
+You can alias selected source keys in `polo.define(...)`:
+
+```ts
+const task = polo.define(z.object({}), {
+  id: "aliased",
+  sources: {
+    customer: supportSources.account,
+  },
+});
+```
+
+## Current limitation: dependency aliases inside source definitions
+
+Dependency aliases are not supported inside source declarations.
+
+```ts
+// This pattern is not supported today
+const child = sources.value(schema, { customer: account }, { ... });
+```
+
+Use the dependency source under its own registered key.

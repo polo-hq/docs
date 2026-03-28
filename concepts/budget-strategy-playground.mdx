@@ -1,0 +1,56 @@
+---
+title: "Budget strategy playground"
+description: "Tune score_per_token with interactive controls and see exactly which chunks are kept or dropped."
+---
+
+import { BudgetStrategyPlayground } from "/snippets/BudgetStrategyPlayground.jsx";
+
+Use this page to understand how `score_per_token` changes chunk selection.
+
+## What alpha does
+
+<Info>
+  Formula: `efficiency = score^alpha / tokenCost`
+</Info>
+
+- `alpha = 0`: token-first. Ranking ignores score for tie-breaking and favors smaller chunks.
+- `alpha = 1`: balanced. Score and token cost both matter.
+- `alpha >= 2`: relevance-heavy. High-score chunks dominate more often.
+
+## Interactive playground
+
+<BudgetStrategyPlayground />
+
+## How this maps to Polo config
+
+The generated snippet in the playground is copy-ready for your `policies` block.
+
+Static template:
+
+```ts
+policies: {
+  budget: {
+    maxTokens: 120,
+    strategy: {
+      type: "score_per_token",
+      options: {
+        alpha: 1.2,
+        minChunkTokens: 1,
+      },
+    },
+  },
+}
+```
+
+## Practical tuning guide
+
+- If retrieval scores are noisy, lower `alpha`.
+- If high-score precision is strong, raise `alpha`.
+- Use `minChunkTokens` to reduce tiny-chunk bias.
+- Reduce budget if you want stricter compression behavior.
+
+## Edge-case note
+
+With `alpha = 0`, score does not break ties.
+
+Ordering becomes token-focused, then falls back to token cost and input order.

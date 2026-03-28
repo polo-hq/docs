@@ -1,0 +1,46 @@
+---
+title: "resolve"
+description: "Execute a task definition and return context, optional prompt, and trace."
+---
+
+`polo.resolve(definition, input)` runs a task.
+
+```ts
+const result = await polo.resolve(task, {
+  accountId: "acc_123",
+  transcript: "Can you help us with webhook timeouts?",
+});
+```
+
+## Return shape
+
+```ts
+type Resolution = {
+  context: Record<string, unknown>;
+  prompt?: { system: string; prompt: string };
+  trace: Trace;
+};
+```
+
+## Behavior summary
+
+- Validates task input first
+- Resolves independent sources in parallel waves
+- Applies derive, policies, and budget
+- Returns `prompt` only when a template exists
+- Always returns trace
+
+## Example
+
+```ts
+const { context, prompt, trace } = await polo.resolve(task, input);
+
+if (prompt) {
+  await model.generate({
+    system: prompt.system,
+    prompt: prompt.prompt,
+  });
+}
+
+console.log(trace.policies);
+```

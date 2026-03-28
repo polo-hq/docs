@@ -1,0 +1,117 @@
+---
+title: "Support reply walkthrough"
+description: "Build a production-style support reply context pipeline with source sets, policies, and templates."
+---
+
+This guide mirrors the `examples/support-reply` flow from the Polo repo.
+
+## 1) Create source sets
+
+```ts
+const accountSourceSet = polo.sourceSet((sources) => {
+  const account = sources.value(z.object({ accountId: z.string() }), {
+    tags: ["internal"],
+    async resolve({ input }) {
+      return db.getAccount(input.accountId);
+    },
+  });
+
+  const billingNotes = sources.value(
+    z.object({ accountId: z.string() }),
+    { account },
+    {
+      tags: ["billing"],
+      async resolve({ account }) {
+        return db.getBillingNotes(account.id);
+      },
+    },
+  );
+
+  return { account, billingNotes };
+});
+```
+
+```ts
+const ticketSourceSet = polo.sourceSet((sources) => {
+  const recentTickets = sources.chunks(
+    z.object({ transcript: z.string() }),
+    { account: accountSourceSet.account },
+    {
+      tags: ["internal"],
+      async resolve({ input, account }) {
+        return vectorDb.searchTickets(account.id, input.transcript);
+      },
+      normalize(item) {
+        return {
+          content: item.pageContent,
+          score: item.relevanceScore,
+          metadata: { ticketId: item.id },
+        };
+      },
+    },
+  );
+
+  return { recentTickets };
+});
+
+const supportReplySources = registerSources(accountSourceSet, ticketSourceSet);
+```
+
+## 2) Define task behavior
+
+```ts
+const supportReply = polo.define(
+  z.object({ accountId: z.string(), transcript: z.string() }),
+  {
+    id: "support_reply",
+    sources: {
+      transcript: polo.source.fromInput("transcript", { tags: ["restricted"] }),
+      account: supportReplySources.account,
+      billingNotes: supportReplySources.billingNotes,
+      recentTickets: supportReplySources.recentTickets,
+    },
+    derive: ({ context }) => ({
+      isEnterprise: context.account.plan === "enterprise",
+      replyStyle: context.account.tier === "priority" ? "concise" : "standard",
+      mentionsBilling: /\b(invoice|refund|charge|billing)\b/i.test(context.transcript),
+    }),
+    policies: {
+      require: ["transcript", "account"],
+      prefer: ["recentTickets", "billingNotes"],
+      exclude: [
+        ({ context }) =>
+          !context.mentionsBilling
+            ? {
+                source: "billingNotes",
+                reason: "billing notes are excluded unless billing is mentioned",
+              }
+            : false,
+      ],
+      budget: 110,
+    },
+    template: ({ context }) => ({
+      system: `You are a support engineer drafting a customer reply. Use a ${context.replyStyle} tone.`,
+      prompt: `Customer message:\n${context.transcript}\n\nAccount:\n${context.account}`,
+    }),
+  },
+);
+```
+
+## 3) Resolve and inspect
+
+```ts
+const { context, prompt, trace } = await polo.resolve(supportReply, {
+  accountId: "acc_123",
+  transcript: "Our webhook deliveries are timing out since yesterday's deploy.",
+});
+
+console.log(context.replyStyle);
+console.log(prompt?.system);
+console.log(trace.policies);
+```
+
+## 4) What to verify
+
+- `billingNotes` is excluded when billing is not mentioned.
+- Lower-value chunks are trimmed as budget gets tight.
+- Trace shows exactly what was included, excluded, trimmed, or dropped.

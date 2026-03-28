@@ -5,3 +5,6 @@
 # Draft content
 drafts/
 *.draft.mdx
+
+# Archived Mint starter pages
+archive/starter-kit/

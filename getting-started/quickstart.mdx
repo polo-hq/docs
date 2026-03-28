@@ -1,0 +1,119 @@
+---
+title: "Quickstart"
+description: "Define and resolve your first Polo task with typed context and a prompt."
+---
+
+Build one complete task:
+
+1. Define sources
+2. Define a task
+3. Resolve input into context and prompt
+
+## 1) Define reusable sources
+
+```ts
+import { createPolo, registerSources } from "@polo/core";
+import { z } from "zod";
+
+const polo = createPolo();
+
+const accountInputSchema = z.object({ accountId: z.string() });
+const transcriptInputSchema = z.object({ transcript: z.string() });
+
+const accountSourceSet = polo.sourceSet((sources) => {
+  const account = sources.value(accountInputSchema, {
+    async resolve({ input }) {
+      return db.getAccount(input.accountId);
+    },
+  });
+
+  const billingNotes = sources.value(accountInputSchema, { account }, {
+    async resolve({ account }) {
+      return db.getBillingNotes(account.id);
+    },
+  });
+
+  return { account, billingNotes };
+});
+
+const ticketSourceSet = polo.sourceSet((sources) => {
+  const recentTickets = sources.chunks(
+    transcriptInputSchema,
+    { account: accountSourceSet.account },
+    {
+      async resolve({ input, account }) {
+        return vectorDb.searchTickets(account.id, input.transcript);
+      },
+      normalize(item) {
+        return {
+          content: item.pageContent,
+          score: item.relevanceScore,
+        };
+      },
+    },
+  );
+
+  return { recentTickets };
+});
+
+const supportReplySources = registerSources(accountSourceSet, ticketSourceSet);
+```
+
+## 2) Define the task
+
+```ts
+const supportReplyInputSchema = z.object({
+  accountId: z.string(),
+  transcript: z.string(),
+});
+
+export const supportReply = polo.define(supportReplyInputSchema, {
+  id: "support_reply",
+  sources: {
+    transcript: polo.source.fromInput("transcript"),
+    account: supportReplySources.account,
+    billingNotes: supportReplySources.billingNotes,
+    recentTickets: supportReplySources.recentTickets,
+  },
+  derive: ({ context }) => ({
+    mentionsBilling: /\b(invoice|refund|charge|billing)\b/i.test(context.transcript),
+  }),
+  policies: {
+    require: ["transcript", "account"],
+    prefer: ["recentTickets", "billingNotes"],
+    exclude: [
+      ({ context }) =>
+        !context.mentionsBilling
+          ? {
+              source: "billingNotes",
+              reason: "billing notes are excluded unless billing is mentioned",
+            }
+          : false,
+    ],
+    budget: 110,
+  },
+  template: ({ context }) => ({
+    system: "You are a support engineer.",
+    prompt: `Customer message:\n${context.transcript}\n\nAccount:\n${context.account}`,
+  }),
+});
+```
+
+## 3) Resolve input at runtime
+
+```ts
+const { context, prompt, trace } = await polo.resolve(supportReply, {
+  accountId: "acc_123",
+  transcript: "Our webhook deliveries are timing out in production.",
+});
+
+console.log(context.account);
+console.log(prompt?.system);
+console.log(trace.budget);
+```
+
+`context` is always returned. `prompt` is only returned when `template` is defined.
+
+<Tip>
+  Next: read [policies and budget](/concepts/policies-and-budget) and [templates and token measurement](/concepts/templates-and-token-measurement).
+</Tip>

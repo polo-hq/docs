@@ -1,0 +1,81 @@
+---
+title: "Sources"
+description: "Use input, value, and chunk sources to build runtime context."
+---
+
+A source is one context field.
+
+Polo supports three source types:
+
+- `polo.source.fromInput()` for passthrough input
+- `polo.source()` for single resolved values
+- `polo.source.chunks()` for ranked multi-item context
+
+## Input source
+
+Use input sources when a field already comes from caller input.
+
+```ts
+const task = polo.define(
+  z.object({ transcript: z.string() }),
+  {
+    id: "reply",
+    sources: {
+      transcript: polo.source.fromInput("transcript", { tags: ["restricted"] }),
+    },
+  },
+);
+```
+
+## Value source
+
+Use value sources for async lookups.
+
+```ts
+const account = polo.source(z.object({ accountId: z.string() }), {
+  tags: ["internal"],
+  async resolve({ input }) {
+    return db.getAccount(input.accountId);
+  },
+});
+```
+
+## Dependent value source
+
+Use dependencies when one source needs another source's output.
+
+```ts
+const billingNotes = polo.source(
+  z.object({ accountId: z.string() }),
+  { account },
+  {
+    async resolve({ account }) {
+      return db.getBillingNotes(account.id);
+    },
+  },
+);
+```
+
+## Chunk source
+
+Use chunk sources for retrieval results or ranked snippets.
+
+```ts
+const docs = polo.source.chunks(
+  z.object({ query: z.string() }),
+  {
+    async resolve({ input }) {
+      return vectorDb.search(input.query);
+    },
+    normalize(item) {
+      return {
+        content: item.pageContent,
+        score: item.relevance,
+        metadata: { docId: item.id },
+      };
+    },
+  },
+);
+```
+
+Chunk sources are budget-aware. Polo can include, trim, or drop chunks based on your policies.

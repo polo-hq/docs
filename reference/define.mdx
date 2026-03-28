@@ -1,0 +1,56 @@
+---
+title: "define"
+description: "Declare a task contract with sources, derive, policies, and template."
+---
+
+`polo.define(inputSchema, config)` declares a task.
+
+## Minimal example
+
+```ts
+const task = polo.define(
+  z.object({ transcript: z.string() }),
+  {
+    id: "support_reply",
+    sources: {
+      transcript: polo.source.fromInput("transcript"),
+    },
+  },
+);
+```
+
+## Full shape
+
+```ts
+const task = polo.define(inputSchema, {
+  id: "support_reply",
+  sources: {
+    transcript: polo.source.fromInput("transcript"),
+    account: supportSources.account,
+  },
+  derive: ({ context }) => ({
+    isEnterprise: context.account.plan === "enterprise",
+  }),
+  policies: {
+    require: ["transcript", "account"],
+    prefer: ["recentTickets"],
+    exclude: [
+      ({ context }) =>
+        context.isEnterprise
+          ? false
+          : { source: "account", reason: "example only" },
+    ],
+    budget: { maxTokens: 220, strategy: { type: "greedy_score" } },
+  },
+  template: ({ context }) => ({
+    system: "You are a support engineer.",
+    prompt: `${context.transcript}`,
+  }),
+});
+```
+
+## Notes
+
+- `id` should be stable. It appears in traces.
+- Source dependency validation happens at definition time.
+- Derived values are added to final `context`.

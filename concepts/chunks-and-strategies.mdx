@@ -1,0 +1,80 @@
+---
+title: "Chunks and strategies"
+description: "Pack ranked chunk sources into budget with built-in or custom strategies."
+---
+
+Chunk sources return ranked blocks.
+
+Polo uses a budget strategy to decide which chunks fit.
+
+## Define a chunk source
+
+```ts
+const docs = polo.source.chunks(
+  z.object({ query: z.string() }),
+  {
+    async resolve({ input }) {
+      return retriever.search(input.query);
+    },
+    normalize(item) {
+      return {
+        content: item.pageContent,
+        score: item.relevance,
+      };
+    },
+  },
+);
+```
+
+## Built-in strategies
+
+### `greedy_score` (default)
+
+- Sort by `score` descending
+- Include while chunks fit
+
+### `score_per_token`
+
+- Rank by `score^alpha / tokenCost`
+- Better when one large chunk would crowd out multiple efficient chunks
+
+```ts
+policies: {
+  budget: {
+    maxTokens: 200,
+    strategy: {
+      type: "score_per_token",
+      options: { alpha: 1, minChunkTokens: 1 },
+    },
+  },
+}
+```
+
+## Custom strategy
+
+```ts
+import type { BudgetStrategyFn } from "@polo/core";
+
+const keepFirstOnly: BudgetStrategyFn = (chunks, ctx) => {
+  const first = chunks[0];
+  if (!first) return { included: [], records: [], tokensUsed: 0 };
+
+  const tokens = ctx.estimateTokens(first.content);
+  return {
+    included: tokens <= ctx.budget ? [first] : [],
+    records: chunks.map((chunk, index) => ({
+      content: chunk.content,
+      score: chunk.score,
+      included: index === 0 && tokens <= ctx.budget,
+      ...(index > 0 ? { reason: "custom_filter" } : {}),
+    })),
+    tokensUsed: tokens <= ctx.budget ? tokens : 0,
+  };
+};
+```
+
+Use a custom strategy when business logic matters more than raw score ordering.
+
+<Tip>
+  Try the interactive [budget strategy playground](/concepts/budget-strategy-playground) to tune `alpha`, `minChunkTokens`, and budget side by side.
+</Tip>

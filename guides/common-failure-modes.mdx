@@ -1,0 +1,79 @@
+---
+title: "Common failure modes"
+description: "Understand common @polo/core errors and fix patterns quickly."
+---
+
+Use this page when task definition or resolution fails.
+
+## Required source resolves to null/undefined
+
+Error: `RequiredSourceMissingError`
+
+Cause: A key in `policies.require` resolved to `null` or `undefined`.
+
+Fix:
+
+- Make the source always return a value, or
+- Move it from `require` to `prefer` if it is optional
+
+## Missing source dependency
+
+Error: `MissingSourceDependencyError`
+
+Cause: You selected a dependent source but not its prerequisite source.
+
+Fix:
+
+```ts
+// If child depends on account, include both
+sources: {
+  account: sourceRegistry.account,
+  child: sourceRegistry.child,
+}
+```
+
+## Circular dependency graph
+
+Error: `CircularSourceDependencyError`
+
+Cause: Two or more sources depend on each other.
+
+Fix:
+
+- Break the cycle
+- Move shared logic into one upstream source
+
+## Source resolver throws
+
+Error: `SourceResolutionError`
+
+Cause: Resolver code threw at runtime.
+
+Fix:
+
+- Add handling around DB/network calls
+- Return a safe fallback for non-required sources
+
+## Dependency alias in sourceSet
+
+Error text includes `Dependency aliases are not supported yet`
+
+Cause: A dependency is referenced under a different key name in source definitions.
+
+Fix:
+
+```ts
+// Use the dependency under its own registered key
+const billingNotes = sources.value(schema, { account }, { ... });
+```
+
+## Over-budget drops
+
+Symptom: optional sources or chunks are missing from final context/prompt.
+
+Fix options:
+
+1. Raise budget
+2. Mark fewer keys as preferred
+3. Use `score_per_token` for chunk-heavy workloads
+4. Reduce template overhead

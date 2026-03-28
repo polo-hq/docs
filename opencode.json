@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "Mintlify": {
+      "type": "remote",
+      "url": "https://polo-dbb839c0.mintlify.app/mcp",
+      "oauth": {}
+    }
+  }
+}

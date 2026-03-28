@@ -1,0 +1,70 @@
+---
+title: "Source factory"
+description: "Reference for polo.source.fromInput, polo.source, and polo.source.chunks."
+---
+
+`polo.source` is both a function and a namespace.
+
+## `polo.source.fromInput(key, options?)`
+
+Pass through a value from task input.
+
+```ts
+transcript: polo.source.fromInput("transcript", { tags: ["restricted"] })
+```
+
+## `polo.source(inputSchema, config)`
+
+Create an async value source.
+
+```ts
+const account = polo.source(z.object({ accountId: z.string() }), {
+  tags: ["internal"],
+  async resolve({ input }) {
+    return db.getAccount(input.accountId);
+  },
+});
+```
+
+## `polo.source(inputSchema, deps, config)`
+
+Create a dependent value source.
+
+```ts
+const billingNotes = polo.source(schema, { account }, {
+  async resolve({ account }) {
+    return db.getBillingNotes(account.id);
+  },
+});
+```
+
+## `polo.source.chunks(inputSchema, config)`
+
+Create a chunk source returning `Chunk[]`-like data.
+
+```ts
+const docs = polo.source.chunks(z.object({ query: z.string() }), {
+  async resolve({ input }) {
+    return retriever.search(input.query);
+  },
+  normalize(item) {
+    return { content: item.pageContent, score: item.relevance };
+  },
+});
+```
+
+## `polo.source.chunks(inputSchema, deps, config)`
+
+Create a dependent chunk source.
+
+```ts
+const recentTickets = polo.source.chunks(schema, { account }, {
+  async resolve({ input, account }) {
+    return vectorDb.searchTickets(account.id, input.transcript);
+  },
+});
+```
+
+<Warning>
+  Dependency aliases are not supported in source declarations yet. Use dependency sources under their own key names.
+</Warning>

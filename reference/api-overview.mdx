@@ -1,0 +1,48 @@
+---
+title: "API overview"
+description: "Public exports from @polo/core and where to use each one."
+---
+
+`@polo/core` exports a small runtime API and supporting types.
+
+## Runtime functions
+
+```ts
+import { createPolo, registerSources } from "@polo/core";
+```
+
+- `createPolo(options?)` creates a runtime instance.
+- `registerSources(...sourceSets)` merges reusable source sets.
+
+## Main runtime methods
+
+After `createPolo()`, you call:
+
+- `polo.source.fromInput(...)`
+- `polo.source(...)`
+- `polo.source.chunks(...)`
+- `polo.sourceSet(...)`
+- `polo.define(...)`
+- `polo.resolve(...)`
+
+## Common types
+
+```ts
+import type {
+  InferContext,
+  Trace,
+  BudgetConfig,
+  BudgetStrategyFn,
+  Chunk,
+} from "@polo/core";
+```
+
+See detailed pages:
+
+- [createPolo](/reference/create-polo)
+- [source factory](/reference/source-factory)
+- [sourceSet and registerSources](/reference/source-set-and-register-sources)
+- [define](/reference/define)
+- [resolve](/reference/resolve)
+- [errors](/reference/errors)
+- [trace schema](/reference/trace-schema)

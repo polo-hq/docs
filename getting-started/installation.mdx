@@ -1,0 +1,41 @@
+---
+title: "Installation"
+description: "Install @polo/core and set up a runtime instance."
+---
+
+Install `@polo/core` and a schema library.
+
+```bash
+pnpm add @polo/core zod
+```
+
+Polo works with Standard Schema-compatible validators. These docs use `zod`.
+
+## Create a runtime
+
+```ts
+import { createPolo } from "@polo/core";
+
+export const polo = createPolo();
+```
+
+Use one runtime per service or app boundary.
+
+## Optional runtime hooks
+
+```ts
+import { createPolo } from "@polo/core";
+
+export const polo = createPolo({
+  onTrace(trace) {
+    // Forward trace to your observability pipeline
+  },
+  logger: {
+    info(payload) {
+      console.log(payload);
+    },
+  },
+});
+```
+
+Use `onTrace` when you need structured per-run data in your own tools.

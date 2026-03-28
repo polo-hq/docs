@@ -1,97 +1,56 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Polo core"
+description: "Assemble typed runtime context for AI tasks with policies, budgets, templates, and traces."
 ---
 
-## Setting up
+Polo helps you define context once, then resolve it the same way on every run.
 
-Get your documentation site up and running in minutes.
+You describe your sources, dependencies, policies, and optional template. Polo returns a typed `context`, optional `prompt`, and a trace of what happened.
 
 <Card
-  title="Start here"
+  title="Quickstart"
   icon="rocket"
-  href="/quickstart"
+  href="/getting-started/quickstart"
   horizontal
 >
-  Follow our three step quickstart guide.
+  Build your first `@polo/core` task in a few minutes.
 </Card>
 
-## Make it yours
+## What you can do with Polo
 
-Design a docs site that looks great and empowers your users.
+<CardGroup cols={2}>
+  <Card title="Create reusable sources" icon="database" href="/concepts/sources">
+    Pull context from inputs, databases, and retrieval systems.
+  </Card>
+  <Card title="Enforce dependencies" icon="git-branch" href="/concepts/source-sets-and-dependencies">
+    Ensure dependent sources are selected together.
+  </Card>
+  <Card title="Control inclusion" icon="shield-check" href="/concepts/policies-and-budget">
+    Require, prefer, exclude, and budget sources predictably.
+  </Card>
+  <Card title="Measure outcomes" icon="line-chart" href="/concepts/trace-and-observability">
+    Inspect token usage, source timing, and policy decisions.
+  </Card>
+</CardGroup>
 
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
-  </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
-  </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
-  </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
+## Start here
 
-## Create beautiful pages
+<Steps>
+  <Step title="Install the package">
+    Follow [installation](/getting-started/installation).
+  </Step>
+  <Step title="Build a first task">
+    Follow [quickstart](/getting-started/quickstart).
+  </Step>
+  <Step title="Understand core behavior">
+    Read [policies and budget](/concepts/policies-and-budget) and [templates and token measurement](/concepts/templates-and-token-measurement).
+  </Step>
+</Steps>
 
-Everything you need to create world-class documentation.
+## API reference
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+See [API overview](/reference/api-overview) for the full exported surface.
 
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+```ts
+import { createPolo, registerSources } from "@polo/core";
+```

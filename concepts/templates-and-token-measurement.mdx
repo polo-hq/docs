@@ -1,0 +1,58 @@
+---
+title: "Templates and token measurement"
+description: "Render prompts from context and measure exact prompt token usage."
+---
+
+Add a `template` function when you want Polo to return prompt strings.
+
+```ts
+const task = polo.define(inputSchema, {
+  id: "support_reply",
+  sources: {
+    transcript: polo.source.fromInput("transcript"),
+    account: supportSources.account,
+    recentTickets: supportSources.recentTickets,
+  },
+  template: ({ context }) => ({
+    system: `You are helping ${context.account}.`,
+    prompt: `Customer message:\n${context.transcript}`,
+  }),
+});
+```
+
+## Render-aware context
+
+Inside templates, objects and arrays are interpolation-friendly.
+
+```ts
+template: ({ context }) => ({
+  system: `Account:\n${context.account}`,
+  prompt: `${context.recentTickets}`,
+});
+```
+
+If you need the original values for custom formatting, use `context.raw`.
+
+```ts
+template: ({ context }) => ({
+  system: "Support reply",
+  prompt: JSON.stringify(context.raw.account),
+});
+```
+
+## Budget fitting with templates
+
+With a template, Polo renders then fits by exact prompt tokens.
+
+Drop order:
+
+1. Default-included non-chunk sources
+2. Preferred non-chunk sources
+3. Chunk trimming (least valuable chunk each step)
+4. Whole chunk-source drop
+
+Required sources are never dropped.
+
+<Tip>
+  For chunk sources, map to `chunk.content` when you only want text. Interpolating `${context.docs}` includes full chunk objects.
+</Tip>

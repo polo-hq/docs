@@ -1,0 +1,53 @@
+---
+title: "Errors"
+description: "Runtime and definition-time errors you can expect from @polo/core."
+---
+
+`@polo/core` exports four core error classes.
+
+## `RequiredSourceMissingError`
+
+Thrown when a required source resolves to `null` or `undefined`.
+
+```ts
+policies: {
+  require: ["account"],
+}
+```
+
+## `MissingSourceDependencyError`
+
+Thrown when a selected source depends on another source that was not selected.
+
+## `CircularSourceDependencyError`
+
+Thrown when Polo detects a cycle in selected source dependencies.
+
+## `SourceResolutionError`
+
+Thrown when a source resolver throws during execution.
+
+## Handling pattern
+
+```ts
+import {
+  RequiredSourceMissingError,
+  MissingSourceDependencyError,
+  CircularSourceDependencyError,
+  SourceResolutionError,
+} from "@polo/core";
+
+try {
+  await polo.resolve(task, input);
+} catch (error) {
+  if (error instanceof RequiredSourceMissingError) {
+    // Required context is absent
+  } else if (error instanceof MissingSourceDependencyError) {
+    // Task source selection is incomplete
+  } else if (error instanceof CircularSourceDependencyError) {
+    // Source graph has a cycle
+  } else if (error instanceof SourceResolutionError) {
+    // Underlying resolver threw
+  }
+}
+```

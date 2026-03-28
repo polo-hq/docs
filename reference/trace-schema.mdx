@@ -1,0 +1,67 @@
+---
+title: "Trace schema"
+description: "Reference for Trace fields returned by polo.resolve."
+---
+
+`trace` captures execution metadata for each run.
+
+## Top-level fields
+
+```ts
+type Trace = {
+  runId: string;
+  taskId: string;
+  startedAt: Date;
+  completedAt: Date;
+  sources: SourceRecord[];
+  policies: PolicyRecord[];
+  derived: Record<string, unknown>;
+  budget: {
+    max: number;
+    used: number;
+    strategy?: string;
+    candidates?: number;
+    selected?: number;
+  };
+  prompt?: {
+    systemTokens: number;
+    promptTokens: number;
+    totalTokens: number;
+    rawContextTokens: number;
+    includedContextTokens: number;
+    compressionRatio: number;
+    includedCompressionRatio: number;
+  };
+};
+```
+
+## `sources`
+
+Each source record includes:
+
+- `key`
+- `type` (`input`, `value`, `chunks`)
+- `tags`
+- `resolvedAt`
+- `durationMs`
+
+Chunk records also include `chunks[]` with:
+
+- `content` (redacted for excluded chunks)
+- `score`
+- `included`
+- `reason` (for dropped/trimmed chunks)
+
+## `policies`
+
+Each policy record has:
+
+- `source`
+- `action` (`included`, `excluded`, `required`, `preferred`, `dropped`)
+- `reason`
+
+## Prompt metrics
+
+When a template is present, `trace.prompt` reports exact prompt token counts and compression metrics.
+
+`includedCompressionRatio` is often the best metric for comparing prompt-compaction strategies because it compares the final prompt against only the context that remained after policy and budget gating.

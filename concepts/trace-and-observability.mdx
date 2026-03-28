@@ -1,0 +1,58 @@
+---
+title: "Trace and observability"
+description: "Inspect source timing, policy actions, budget usage, and prompt token metrics."
+---
+
+Every `polo.resolve(...)` call returns a `trace`.
+
+Use it to debug behavior and track cost decisions.
+
+## Read trace data
+
+```ts
+const { trace } = await polo.resolve(task, input);
+
+console.log(trace.taskId);
+console.log(trace.runId);
+console.log(trace.budget);
+console.log(trace.policies);
+console.log(trace.sources);
+```
+
+## Forward traces
+
+```ts
+const polo = createPolo({
+  onTrace(trace) {
+    observability.emit("polo_trace", trace);
+  },
+});
+```
+
+## Example trace shape
+
+```json
+{
+  "runId": "run_lm1x...",
+  "taskId": "support_reply",
+  "sources": [
+    { "key": "transcript", "type": "input", "tags": ["restricted"] },
+    { "key": "account", "type": "value", "tags": ["internal"], "durationMs": 2 },
+    {
+      "key": "recentTickets",
+      "type": "chunks",
+      "chunks": [
+        { "included": true, "score": 0.91 },
+        { "included": false, "reason": "over_budget", "score": 0.14 }
+      ]
+    }
+  ],
+  "policies": [
+    { "source": "transcript", "action": "required", "reason": "required by task" },
+    { "source": "billingNotes", "action": "excluded", "reason": "not billing related" }
+  ],
+  "budget": { "max": 110, "used": 98, "strategy": "greedy_score" }
+}
+```
+
+Raw resolved source values are never included in the trace.
